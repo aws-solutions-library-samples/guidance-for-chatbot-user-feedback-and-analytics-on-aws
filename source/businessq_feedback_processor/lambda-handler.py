@@ -11,7 +11,7 @@ from aws_requests_auth.boto_utils import BotoAWSRequestsAuth
 
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 api_gateway_url = os.environ['API_GATEWAY_URL']
 
@@ -74,14 +74,12 @@ def lambda_handler(event, context):
         source_attribution = messages[previous_message_index]['sourceAttribution']
     except KeyError:
         source_attribution = None    
-    logger.info("debug 0")
             
     # check if previous_body_source_attribution is not None
     if source_attribution is not None:
         # get the sourceattribute urls from citations and add to a list
         source_attribution_urls = extract_urls_from_json(json.dumps(source_attribution))
 
-    logger.info("debug 1")
     # Add message details to the analytics data
     response_data = json.dumps({
         'interactionId': messageId,
@@ -96,18 +94,18 @@ def lambda_handler(event, context):
         'submittedAt': submittedAt
     })
             
-    # create json response payload    
+    # create json response payload
     logger.info(response_data)
     
     # invoke api gateway url and make a post request with request data as body
     logger.info(api_gateway_url)
     
-    logger.debug("posting feedback to api endpoint")
+    logger.debug("Posting feedback to api endpoint for message: " + messageId)
     # send post request to api gateway url with request data as body
     response = requests.post(api_gateway_url, data=response_data,auth=auth)
     
-    logger.info(f"response: {response.text}")
-    # logger.info(response.text)
+    #logger.info(f"response: {response.text}")
+    logger.info(response.text)
 
     return {
         'statusCode': 200,

@@ -7,7 +7,7 @@ from datetime import datetime
 
 
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 # S3 client
 s3 = boto3.client('s3')

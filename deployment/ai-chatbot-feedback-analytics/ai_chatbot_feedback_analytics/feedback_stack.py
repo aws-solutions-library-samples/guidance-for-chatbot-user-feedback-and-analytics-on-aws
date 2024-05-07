@@ -13,7 +13,8 @@ from aws_cdk import (
     aws_s3_notifications as s3n,
     aws_apigateway as apigateway,
     aws_logs as logs,
-    BundlingOptions,
+    aws_kms as kms,
+    BundlingOptions
 )
 from aws_cdk.custom_resources import (
     AwsCustomResource,
@@ -21,7 +22,6 @@ from aws_cdk.custom_resources import (
     PhysicalResourceId,
 )
 import aws_cdk.aws_glue_alpha as glue_alpha
-
 
 class FeedbackStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
@@ -81,13 +81,26 @@ class FeedbackStack(Stack):
         # SSL is enforced to encrypt data in transit.
         # The bucket is configured to retain objects on deletion for compliance purposes.
         # A "Classification" tag is added to the bucket to categorize the type of data stored. This helps with data governance and security policies.
+        intelligent_tiering_configuration = s3.IntelligentTieringConfiguration(
+            name="FeebackDataBucketLifecycle",
+        )
         self.data_bucket = s3.Bucket(
             self,
             "chatbot-user-feedback-analytics",
             encryption=s3.BucketEncryption.KMS_MANAGED,
             block_public_access=s3.BlockPublicAccess.BLOCK_ALL,
             enforce_ssl=True,
-            removal_policy=RemovalPolicy.DESTROY,
+            lifecycle_rules=[
+                s3.LifecycleRule(
+                    transitions=[
+                        s3.Transition(
+                            storage_class=s3.StorageClass.INTELLIGENT_TIERING,
+                            transition_after=Duration.days(0),
+                        )
+                    ]
+                )
+            ],
+            removal_policy=RemovalPolicy.RETAIN_ON_UPDATE_OR_DELETE,
         )
 
         # associating a Classification tag
@@ -112,7 +125,7 @@ class FeedbackStack(Stack):
             function_name="llm_app_feedback_processor",
             handler="lambda-handler.lambda_handler",
             runtime=_lambda.Runtime.PYTHON_3_11,
-            code=_lambda.Code.from_asset("../../../source/llm_app_feedback_processor"),
+            code=_lambda.Code.from_asset("../../source/llm_app_feedback_processor"),
             timeout=Duration.seconds(240),
             memory_size=256,
             role=self.api_proxy_lambda_role,
@@ -168,6 +181,7 @@ class FeedbackStack(Stack):
             "POST",
             authorization_type=apigateway.AuthorizationType.IAM,
         )
+
         # Outputting the name of the bucket created
         CfnOutput(self, "feedback-data-bucket-name", value=self.data_bucket.bucket_name)
 
@@ -218,6 +232,45 @@ class FeedbackStack(Stack):
             update_behavior="UPDATE_IN_DATABASE", delete_behavior="LOG"
         )
 
+        self.glue_crawler_security_configuration_name = "FeedbackCrawlerSecurityConfiguration"
+        self.kms_key = kms.Key(self, "FeedbackDataGlueCrawlerKey",
+            enable_key_rotation=True,
+            rotation_period=Duration.days(180)
+        )
+        self.kms_key_arn = f"arn:aws:kms:{Aws.REGION}:{Aws.ACCOUNT_ID}:/key/{self.kms_key.key_id}"
+        
+        glue_crawler_security_configuration = glue.CfnSecurityConfiguration(self, "MyCfnSecurityConfiguration",
+            encryption_configuration=glue.CfnSecurityConfiguration.EncryptionConfigurationProperty(
+                cloud_watch_encryption=glue.CfnSecurityConfiguration.CloudWatchEncryptionProperty(
+                    cloud_watch_encryption_mode="SSE-KMS",
+                    kms_key_arn=self.kms_key_arn,
+                ),
+                s3_encryptions=[glue.CfnSecurityConfiguration.S3EncryptionProperty(
+                    s3_encryption_mode="SSE-S3"
+                )]
+            ),
+            name=self.glue_crawler_security_configuration_name
+        )
+
+        self.glue_crawler_role.attach_inline_policy(
+            iam.Policy(
+                self,
+                "glue_crawler_role_policy_kms",
+                statements=[
+                    iam.PolicyStatement(
+                        actions=[
+                            "kms:Encrypt*",
+                            "kms:Decrypt*",
+                            "kms:ReEncrypt*",
+                            "kms:GenerateDataKey*",
+                            "kms:Describe*"
+                        ],
+                        resources=[f"{self.kms_key_arn}"],
+                    )
+                ],
+            )
+        )
+
         self.glue_crawler = glue.CfnCrawler(
             self,
             f"{self.glue_database_name}-crawler",
@@ -236,6 +289,7 @@ class FeedbackStack(Stack):
                     )
                 ]
             ),
+            crawler_security_configuration=self.glue_crawler_security_configuration_name
         )
 
         # Create an Athena work group CloudFormation resource
@@ -295,7 +349,7 @@ class FeedbackStack(Stack):
             function_name="businessq_feedback_processor",
             handler="lambda-handler.lambda_handler",
             runtime=_lambda.Runtime.PYTHON_3_11,
-            code=_lambda.Code.from_asset("../../../source/businessq_feedback_processor"),
+            code=_lambda.Code.from_asset("../../source/businessq_feedback_processor"),
             timeout=Duration.seconds(240),
             memory_size=256,
             role=self.qbusiness_lambda_role,
