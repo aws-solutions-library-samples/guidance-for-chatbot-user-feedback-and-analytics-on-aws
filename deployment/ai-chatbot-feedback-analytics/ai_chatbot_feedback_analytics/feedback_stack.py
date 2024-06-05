@@ -233,42 +233,14 @@ class FeedbackStack(Stack):
         )
 
         self.glue_crawler_security_configuration_name = "FeedbackCrawlerSecurityConfiguration"
-        self.kms_key = kms.Key(self, "FeedbackDataGlueCrawlerKey",
-            enable_key_rotation=True,
-            rotation_period=Duration.days(180)
-        )
-        self.kms_key_arn = f"arn:aws:kms:{Aws.REGION}:{Aws.ACCOUNT_ID}:/key/{self.kms_key.key_id}"
-        
+                
         glue_crawler_security_configuration = glue.CfnSecurityConfiguration(self, "MyCfnSecurityConfiguration",
             encryption_configuration=glue.CfnSecurityConfiguration.EncryptionConfigurationProperty(
-                cloud_watch_encryption=glue.CfnSecurityConfiguration.CloudWatchEncryptionProperty(
-                    cloud_watch_encryption_mode="SSE-KMS",
-                    kms_key_arn=self.kms_key_arn,
-                ),
                 s3_encryptions=[glue.CfnSecurityConfiguration.S3EncryptionProperty(
                     s3_encryption_mode="SSE-S3"
                 )]
             ),
             name=self.glue_crawler_security_configuration_name
-        )
-
-        self.glue_crawler_role.attach_inline_policy(
-            iam.Policy(
-                self,
-                "glue_crawler_role_policy_kms",
-                statements=[
-                    iam.PolicyStatement(
-                        actions=[
-                            "kms:Encrypt*",
-                            "kms:Decrypt*",
-                            "kms:ReEncrypt*",
-                            "kms:GenerateDataKey*",
-                            "kms:Describe*"
-                        ],
-                        resources=[f"{self.kms_key_arn}"],
-                    )
-                ],
-            )
         )
 
         self.glue_crawler = glue.CfnCrawler(

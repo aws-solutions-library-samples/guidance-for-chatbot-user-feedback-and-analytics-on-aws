@@ -40,53 +40,17 @@ def lambda_handler(event, context):
     applicationId = event["detail"]["requestParameters"]["applicationId"]
     usefulness = event["detail"]["requestParameters"]["messageUsefulness"]['usefulness']
     submittedAt = event["detail"]["requestParameters"]["messageUsefulness"]['submittedAt']
-    userId = event["detail"]["requestParameters"]['userId']
+    userId = event["detail"]["userIdentity"]["onBehalfOf"]["userId"]
 
-    response = client.list_messages(
-        applicationId=event["detail"]["requestParameters"]["applicationId"],
-        conversationId=event["detail"]["requestParameters"]["conversationId"],
-        maxResults=10,
-        userId=event["detail"]["requestParameters"]['userId']
-    )
-    messages = response['messages']
-    
     # with thumbs down there are comments sometimes
     try:
         usefulness_comment = event["detail"]["requestParameters"]["messageUsefulness"]['comment']
     except KeyError:
         usefulness_comment = ""
 
-    
-    source_attribution_urls = []
-    
-    logger.info("All Messages")
-    logger.info(messages)
-    response_data = ""
-
-    # Find the index of the message, this will be the message corresponding to user query
-    message_index = [i for i, message in enumerate(messages) if message['messageId'] == messageId][0]            
-    query = messages[message_index]['body']
-            
-    # get the message before to get the AI response
-    previous_message_index = message_index - 1
-    generated_response = messages[previous_message_index]['body']
-    try:
-        source_attribution = messages[previous_message_index]['sourceAttribution']
-    except KeyError:
-        source_attribution = None    
-            
-    # check if previous_body_source_attribution is not None
-    if source_attribution is not None:
-        # get the sourceattribute urls from citations and add to a list
-        source_attribution_urls = extract_urls_from_json(json.dumps(source_attribution))
-
     # Add message details to the analytics data
     response_data = json.dumps({
         'interactionId': messageId,
-        'prompt': query,
-        'response': generated_response,
-        'source_attribution_urls': source_attribution_urls,
-        'sourceAttribution': source_attribution,
         'appIdentifier': applicationId,
         'feedback': usefulness,
         'comment': usefulness_comment,
@@ -101,11 +65,9 @@ def lambda_handler(event, context):
     logger.info(api_gateway_url)
     
     logger.debug("Posting feedback to api endpoint for message: " + messageId)
+    
     # send post request to api gateway url with request data as body
     response = requests.post(api_gateway_url, data=response_data,auth=auth)
-    
-    #logger.info(f"response: {response.text}")
-    logger.info(response.text)
 
     return {
         'statusCode': 200,

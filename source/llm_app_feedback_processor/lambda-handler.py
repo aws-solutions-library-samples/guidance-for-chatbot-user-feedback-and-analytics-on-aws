@@ -32,42 +32,40 @@ def lambda_handler(event, context):
         try:
             prompt = body['prompt']
         except KeyError:
-            logger.error("prompt is a missing in the request body")
-            error_response = error_response.format(param="prompt")
-            return json.loads(error_response)
+            prompt = "N.A."
+            logger.warning("prompt is missing in the request body")
         
         try:
             response = body['response']
         except KeyError:
-            logger.error("response is a missing in the request body")
-            error_response = error_response.format(param="response")
-            return json.loads(error_response)
+            response = "N.A."
+            logger.warning("response is missing in the request body")
 
         try:
             feedback = body['feedback']
         except KeyError:
-            logger.error("feedback is a missing in the request body")
+            logger.error("feedback is missing in the request body")
             error_response = error_response.format(param="feedback")
             return json.loads(error_response)
         
         try:
             userId = body['userId']        
         except KeyError:            
-            logger.error("userId is a missing in the request body")
+            logger.error("userId is missing in the request body")
             error_response = error_response.format(param="userId")
             return json.loads(error_response)
         
         try:            
             appIdentifier = body['appIdentifier']
         except KeyError:
-            logger.error("appIdentifier is a missing in the request body")
+            logger.error("appIdentifier is missing in the request body")
             error_response = error_response.format(param="appIdentifier")
             return json.loads(error_response)
 
         try:
             interactionId = body['interactionId']
         except KeyError:
-            logger.info("interactionId is a missing in the request body")
+            logger.warning("interactionId is missing in the request body")
             interactionId=str(uuid.uuid4())            
         
         try:
@@ -81,7 +79,7 @@ def lambda_handler(event, context):
             sourceAttribution = body['sourceAttribution']
             logger.info(sourceAttribution)
         except KeyError:
-            logger.info("sourceAttribution is a missing in the request body")
+            logger.warning("sourceAttribution is a missing in the request body")
             sourceAttribution = ""
     
         try:
@@ -89,7 +87,7 @@ def lambda_handler(event, context):
             logger.info(source_attribution_urls)
         
         except KeyError:
-            logger.info("sourceUrls is a missing in the request body")
+            logger.warning("sourceUrls is a missing in the request body")
             source_attribution_urls = []
 
         try:
