@@ -109,7 +109,7 @@ This Guidance uses aws-cdk. If you are using aws-cdk for first time, please perf
 
 ### Supported Regions
 
-Amazon Q Buiness is currently in preview and only available in us-east-1 and us-west-2 AWS regions.
+Amazon Q Buiness is currently generally available. Please refer to the public documentation for the list of available AWS regions.
 
 
 ## Deployment Steps
@@ -164,13 +164,24 @@ The sample solution requires deploying Amazon
 
 ## Next Steps
 
-The guidance shows a mechanism to collect user feedback, same mechanism could also be used to collect feedback on prompts while testing out different prompts with the chatbots. 
+The guidance shows a mechanism to collect user feedback. One possible area of application could be collecting feedback while testing out different prompts with the chatbots. 
 
 The collected data can be analyzed using Amazon QuickSight and each of the feedback may require different mechanism to improve LLM response for e.g.
 - Adding additional data 
 - Prompt engineering
 - [Relevance tuning](https://docs.aws.amazon.com/amazonq/latest/qbusiness-ug/metadata-boosting.html)
 - Retrivel evaluation
+
+## Limitations and security considerations
+
+### Amazon Q for Business feedback details
+The Amazon Q for Business version of the guidance only collects unique identifiers of Q interactions and messages. The actual content can be retrieved using the qbusiness:ListMessages API. Please note that the QBusiness API operations now require an authenticated identity through IAM Identity Center. The implementation depends on the Identity Provider integrated with IAM IdC. Please refer to [Custom Web Experience with Amazon Q Business](https://github.com/aws-samples/custom-web-experience-with-amazon-q-business) for a sample implementation using Amazon Cognito as IdP.
+
+### Working with sensitive information (e.g. PII)
+This guidance provides Amazon Cloudformation templates that configure encryption at rest with AWS KMS SSE for Amazon S3 and AWS Glue, and Amazon Athena. Data is also encrypted in transit by default.
+To keep cost low the guidance does not include any built-in PII detection or redaction features. However there are a few options you may consider, should you need to extend the solution to implement a sensitive data management strategy:
+- [Amazon Macie](https://aws.amazon.com/macie/)
+- [Amazon Comprehend](https://aws.amazon.com/comprehend/)
 
 ## Cleanup
 
