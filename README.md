@@ -81,6 +81,7 @@ The following table provides a sample cost breakdown for deploying this Guidance
 | Amazon Athena | 10,000 queries 1 GB data scanned per quert  | $ 48.83/month |
 | Amazon S3 | 5 GB standard tier data, 100,000 PUT request and 10,000 select requests  | $ 0.62/month |
 | Amazon Quicksight | 1 Active reader and 1 active author  | $ 29.00/month |
+| AWS CloudTrail | 10,000,000 Data events delievered per month | $10/month |
 
 
 
@@ -127,7 +128,7 @@ The sample solution requires deploying Amazon
     
 
 ### Deploy solution
-1. Clone the repo using the command ```git clone xxxxxxx```
+1. Clone the repo using the command ```git clone https://github.com/aws-solutions-library-samples/guidance-for-gen-ai-chatbot-user-feedback-analytics-on-aws```
 2. Navigate to deployment directory ```cd guidance-for-ai-chatbot-user-feedback-analytics/deployment/```
 
 3. install and activate a Python Virtual Environment
@@ -137,12 +138,14 @@ The sample solution requires deploying Amazon
     ```source .venv/bin/activate```
 
 4. Install dependant libraries
-```python -m pip install -r ai-chatbot-feedback-analytics/requirements.txt```
+```cd ai-chatbot-feedback-analytics```
 
-5. Update the CDK Context Parameters
+```python -m pip install -r requirements.txt```
+
+5. Update the CDK Context Parameters by modifying ``cdk.context.json``
 ```
     "classification": "confidential"
-    "application_id": "xxxxx-xxxxx-xxxx-xxxx-xxxxx
+    "application_id": "xxxxx-xxxxx-xxxx-xxxx-xxxxx"
 ```
     1. classification: data classification tag for the s3 bucket default confidential
 
