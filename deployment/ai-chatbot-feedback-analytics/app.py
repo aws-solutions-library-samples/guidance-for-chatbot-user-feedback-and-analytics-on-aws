@@ -8,7 +8,7 @@ from cdk_nag import AwsSolutionsChecks, NagSuppressions
 app = App()
 
 
-qlambda = FeedbackStack(app, "ai-chatbot-feedback-analytics-stack", description='Feedback collection for GenAI chatbot.')
+qlambda = FeedbackStack(app, "ai-chatbot-feedback-analytics-stack", description='Feedback collection for GenAI chatbot (SO9465)')
 Tags.of(qlambda).add("project", "feedback-analytics-stack")
 
 NagSuppressions.add_stack_suppressions(
