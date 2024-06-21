@@ -1,7 +1,4 @@
-# Guidance for Gen AI Chatbot User Feedback Observability on AWS
-
-
-
+# Guidance Chatbot User Feedback and Analytics on AWS
 
 ## Table of Content
 
